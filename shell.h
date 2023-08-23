@@ -40,6 +40,10 @@ char *duplicate_custom_str(char *str);
 int compare_custom_str(char *str1, char *str2, int num);
 void run_shell(void);
 void execute_command(const char *command);
+void expandVariables(data_of_program *data);
+void expandAlias(data_of_program *data);
+int bufferAdd(char *buffer, char *strToAdd);
+
 char *concat_custom_str(char *str1, char *str2);
 void reverse_custom_str(char *str);
 int find_variable_index(char *key, EnvironmentVariable *variables, int size);
