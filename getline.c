@@ -1,65 +1,86 @@
-#include <unistd.h>
-#include <stdlib.h>
-
-#define BUFFER_SIZE 1024
+#include "shell.h"
 
 /**
- * customGetLine - Custom implementation of getline
+ * _getline - Read one line from the prompt.
+ * @data: Pointer to the struct for the program's data
  *
- * Return: A dynamically allocated line read from stdin, or NULL on EOF/error
+ * Return: The number of bytes read, or -1 on EOF/error.
  */
-char *customGetLine(void)
+int _getline(data_of_program *data)
 {
-	static char buffer[BUFFER_SIZE];
-	static size_t buffer_position = 0;
-	static ssize_t buffer_size = 0;
+	char buff[BUFFER_SIZE] = {'\0'};
+	static char *array_commands[10] = {NULL};
+	static char array_operators[10] = {'\0'};
+	ssize_t bytes_read, i = 0;
 
-	char *line = NULL;
-	size_t line_length = 0;
-
-	while (1)
+	if (!array_commands[0] ||
+			(array_operators[0] == '&' && errno != 0) ||
+			(array_operators[0] == '|' && errno == 0))
 	{
-		if (buffer_position >= buffer_size)
+		for (i = 0; array_commands[i]; i++)
 		{
-			buffer_size = read(STDIN_FILENO, buffer, BUFFER_SIZE);
-			buffer_position = 0;
-
-			if (buffer_size <= 0)
-			{
-				if (line_length == 0)
-				{
-					return (NULL);
-				}
-				else
-				{
-					break;
-				}
-			}
+			free(array_commands[i]);
+			array_commands[i] = NULL;
 		}
 
-		char c = buffer[buffer_position++];
-		if (c == '\n')
-		{
-			break;
-		}
+		bytes_read = read(data->file_descriptor, &buff, BUFFER_SIZE - 1);
+		if (bytes_read == 0)
+			return (-1);
 
-		if (line_length % BUFFER_SIZE == 0)
-		{
-			size_t new_length = line_length + BUFFER_SIZE;
-			line = realloc(line, new_length);
-			if (!line)
-			{
-				perror("realloc");
-				exit(EXIT_FAILURE);
-			}
-		}
-		line[line_length++] = c;
+		i = 0;
+		do {
+			array_commands[i] = str_duplicate(_strtok(i ? NULL : buff, "\n;"));
+			i = check_logic_ops(array_commands, i, array_operators);
+		} while (array_commands[i++]);
 	}
 
-	if (line)
+	data->input_line = array_commands[0];
+	for (i = 0; array_commands[i]; i++)
 	{
-		line[line_length] = '\0';
+		array_commands[i] = array_commands[i + 1];
+		array_operators[i] = array_operators[i + 1];
 	}
 
-	return (line);
+	return (str_length(data->input_line));
+}
+
+/**
+ * check_logic_ops - Check and split for && and || operators
+ * @array_commands: Array of commands
+ * @i: Index in the array_commands to be checked
+ * @array_operators: Array of logical operators for each previous command
+ *
+ * Return: Index of the last command in the array_commands.
+ */
+int check_logic_ops(char *array_commands[], int i, char array_operators[])
+{
+	char *temp = NULL;
+	int j;
+
+	for (j = 0; array_commands[i] != NULL  && array_commands[i][j]; j++)
+	{
+		if (array_commands[i][j] == '&' && array_commands[i][j + 1] == '&')
+		{
+			temp = array_commands[i];
+			array_commands[i][j] = '\0';
+			array_commands[i] = str_duplicate(array_commands[i]);
+			array_commands[i + 1] = str_duplicate(temp + j + 2);
+			i++;
+			array_operators[i] = '&';
+			free(temp);
+			j = 0;
+		}
+		if (array_commands[i][j] == '|' && array_commands[i][j + 1] == '|')
+		{
+			temp = array_commands[i];
+			array_commands[i][j] = '\0';
+			array_commands[i] = str_duplicate(array_commands[i]);
+			array_commands[i + 1] = str_duplicate(temp + j + 2);
+			i++;
+			array_operators[i] = '|';
+			free(temp);
+			j = 0;
+		}
+	}
+	return (i);
 }

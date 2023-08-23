@@ -14,7 +14,8 @@ typedef struct {
 	char *input_line;
 } shell_data;
 
-
+int _getline(data_of_program *data);
+int check_logic_ops(char *array_commands[], int i, char array_operators[]);
 
 char *customGetLine(void);
 int read_input(shell_data *shell);
