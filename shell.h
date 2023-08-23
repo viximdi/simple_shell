@@ -1,6 +1,8 @@
 #ifndef SHELL_H
 #define SHELL_H
 
+#define BUFFER_SIZE 1024
+
 typedef struct {
 	char *key;
 	char *value;
@@ -12,6 +14,9 @@ typedef struct {
 	char *input_line;
 } shell_data;
 
+
+
+char *customGetLine(void);
 int read_input(shell_data *shell);
 int process_logical_operators(char *command_queue[], int i, char operators_queue[]);
 void clear_command_queue(char *command_queue[]);
